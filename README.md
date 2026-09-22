@@ -10,6 +10,8 @@
 | `motion_seq.py` | **연속 자세 녹화/재생** (자세마다 그리퍼 동작 포함) |
 | `pick_place_hardcoded.py` | pick / place 두 자세로 하는 단순 픽앤플레이스 |
 | `vision_pick_place.py` | 카메라 화면 클릭 → 핸드-아이 캘리브 결과로 물체 위치 계산 → 집기 |
+| `detector_node.py` | 카메라 + YOLO 검출 → 물체 3D 좌표를 `/detections` 토픽으로 발행 (임시 COCO 모델, 팀원 모듈로 교체 예정) |
+| `object_picker.py` | `/detections` 를 받아서 **요청한 라벨의 물체**를 집어 place 에 놓기 |
 | `sequences.json`, `poses.json` | 녹화된 자세 (`motion_seq.py` / `pick_place_hardcoded.py` 가 사용) |
 
 ---
@@ -184,7 +186,47 @@ python3 vision_pick_place.py --place place2
 
 ---
 
-## 5. `gripper_repeat.py` — 그리퍼 반복 테스트
+## 5. 물체 인식 픽앤플레이스 (`detector_node.py` + `object_picker.py`)
+
+YOLO 는 전용 venv 에 설치되어 있습니다 (CPU, numpy 1.x 고정 — ROS 호환):
+
+```bash
+python3 -m venv ~/venv/yolo
+printf 'numpy<2\nopencv-python<4.12\n' > ~/venv/yolo/constraints.txt
+~/venv/yolo/bin/pip install -c ~/venv/yolo/constraints.txt torch torchvision --index-url https://download.pytorch.org/whl/cpu
+~/venv/yolo/bin/pip install -c ~/venv/yolo/constraints.txt "numpy<2" ultralytics pyrealsense2
+```
+
+**터미널 3 — 검출기** (카메라는 이 프로그램이 사용. 첫 실행 시 `models/yolo11n.pt` 자동 다운로드)
+
+```bash
+~/venv/yolo/bin/python detector_node.py --show                 # 검출 창 표시
+~/venv/yolo/bin/python detector_node.py --classes cup bottle   # 특정 라벨만
+ros2 topic echo /detections                                     # 발행 내용 확인
+```
+
+**터미널 4 — 집기**
+
+```bash
+python3 object_picker.py --dry                          # 좌표만 출력 (로봇·bringup 불필요)
+python3 object_picker.py                                # 라벨 입력 → 확인(y) → 집어서 place 에 놓기
+python3 object_picker.py --place place2 --grip-depth 15
+```
+
+| 옵션 | 기본값 | 설명 |
+|---|---|---|
+| `--grip-depth` | 20 | 물체 윗면에서 몇 mm 아래를 잡을지 |
+| `--clearance` | 80 | 물체 윗면 위 접근 높이 (mm) |
+| `--min-conf` | 0.5 | 이 신뢰도 미만 검출은 무시 |
+| `--place` | place | 놓을 자세 이름 (`pick_place_hardcoded.py teach` 로 저장) |
+| `--current` / `--grip-wait` | 300 / 1.5 | 잡는 힘 / 그리퍼 후 대기 |
+
+검출기 교체: `/detections` (std_msgs/String, JSON) 형식만 지키면 됩니다 — 형식은 `detector_node.py` 맨 위 주석 참고.
+`xyz` 는 **카메라 좌표계 3D (m)**, 로봇 좌표 변환은 `object_picker.py` 가 합니다.
+
+---
+
+## 6. `gripper_repeat.py` — 그리퍼 반복 테스트
 
 ```bash
 python3 gripper_repeat.py --show                        # 현재 관절각만 출력
