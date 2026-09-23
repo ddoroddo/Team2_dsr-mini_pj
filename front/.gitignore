@@ -1,0 +1,11 @@
+# 원본 대용량 이미지 (재생성은 scripts/prepare_assets.py 참고)
+assets/raw/
+assets/ingredients/_preview_*.png
+
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
