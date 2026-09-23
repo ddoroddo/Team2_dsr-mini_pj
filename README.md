@@ -5,35 +5,84 @@
 
 | 파일 | 용도 |
 |---|---|
+| `hamburger_final.py` | **[핵심] 비전 기반 수제버거 N단 자율 적재 시스템** (순서 지정, YOLO 추론, J6 회전 정렬, 15mm 층별 적재) |
+| `go_hover_target.py` | **고정 Z 파지 및 비전 정렬 도구** (사전 IK/FK 검증, 회전각 정렬, 대화형 제어) |
+| `train_yolo.py` | **YOLOv8 버거 재료 모델 학습 스크립트** (NVIDIA GPU 파인튜닝, mAP50 99.5%) |
+| `generate_synthetic_dataset.py` | **80x80 규격 합성/실사 증강 데이터셋 생성기** (Bun Top vs Tomato 오인식 해결) |
+| `yolo_detector.py` | **YOLOv8 ROS 2 실시간 디텍터 노드** (3D 좌표 계산 및 latest_targets.json 퍼블리시) |
+| `realsense_node.py` | **RealSense D400 시리즈 RGB-D ROS 2 퍼블리셔 노드** |
 | `check_e0509.sh` | 로봇 연결 점검 (유선 IP · ping · 컨트롤러 포트 · 워크스페이스) |
+| `sim_bridge.py` | **시뮬레이션 브릿지** (Gazebo ↔ DSR ROS2 / Gripper 서비스 변환) |
 | `gripper_repeat.py` | 한 자세에서 그리퍼 열기/닫기 반복 |
 | `motion_seq.py` | **연속 자세 녹화/재생** (자세마다 그리퍼 동작 포함) |
 | `pick_place_hardcoded.py` | pick / place 두 자세로 하는 단순 픽앤플레이스 |
-| `vision_pick_place.py` | 카메라 화면 클릭 → 핸드-아이 캘리브 결과로 물체 위치 계산 → 집기 |
+| `vision_pick_place.py` | 카메라 화면 클릭 → 핸드-아이 캘리브 결과로 물체 위치 계산 → 집기 (실물/시뮬 겸용) |
 | `detector_node.py` | 카메라 + YOLO 검출 → 물체 3D 좌표를 `/detections` 토픽으로 발행 (임시 COCO 모델, 팀원 모듈로 교체 예정) |
 | `object_picker.py` | `/detections` 를 받아서 **요청한 라벨의 물체**를 집어 place 에 놓기 |
 | `sequences.json`, `poses.json` | 녹화된 자세 (`motion_seq.py` / `pick_place_hardcoded.py` 가 사용) |
 | `front/` | **주문판 웹 UI** (Overcooked 스타일 주문 티켓 · 버거 선택/조립). 실행: `cd front && python3 -m http.server 8000` → <http://localhost:8000>. 로봇 연동 API 는 `front/README.md` 참고 |
+---
+
+## 🌟 시뮬레이션(Gazebo) 환경에서 실행하는 방법
+
+실물 로봇 대신 **Gazebo 통합 시뮬레이션 환경**에서 모든 스크립트를 바로 구동할 수 있습니다.
+
+### [사전 준비] Gazebo 및 시뮬레이션 브릿지 실행
+
+**터미널 1 — Gazebo 시뮬레이션 실행 (테이블 + 로봇 + 카메라 + 블록)**
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/doosan_ws/install/setup.bash
+ros2 launch dsr_project gazebo_table.launch.py
+```
+
+**터미널 2 — 블록 스폰 (최초 1회)**
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/doosan_ws/install/setup.bash
+python3 ~/doosan_ws/test/spawn_blocks.py
+```
+
+**터미널 3 — DSR 시뮬레이션 브릿지 실행 (실물 컨트롤러 & 그리퍼 서비스 대체)**
+```bash
+source /opt/ros/jazzy/setup.bash
+source ~/doosan_ws/install/setup.bash
+cd ~/doosan_ws/Team2_dsr-mini_pj
+python3 sim_bridge.py
+```
 
 ---
 
-## 0. 환경
-
-- Ubuntu 24.04 + ROS 2 Jazzy, [doosan-robot2](https://github.com/doosan-robotics/doosan-robot2) (jazzy) 를 `~/doosan_ws` 에 빌드
-- 그리퍼 패키지 `dsr_gripper`, `dsr_gripper_interfaces` 빌드 완료
-- 로봇 컨트롤러 IP `110.120.1.68` (로봇마다 다름), `ROS_DOMAIN_ID=40`
-- 스크립트 위치: `~/doosan_ws/scripts`
-
-모든 터미널에서 먼저:
+### [스크립트 실행] 터미널 4에서 원하는 스크립트 실행
 
 ```bash
 source /opt/ros/jazzy/setup.bash
 source ~/doosan_ws/install/setup.bash
-export ROS_DOMAIN_ID=40
-cd ~/doosan_ws/scripts
+cd ~/doosan_ws/Team2_dsr-mini_pj
 ```
 
-## 1. 로봇 실행 (항상 먼저)
+1. **그리퍼 반복 테스트**:
+   ```bash
+   python3 gripper_repeat.py -n 3
+   ```
+2. **단순 픽앤플레이스 (저장된 pick & place 위치)**:
+   ```bash
+   python3 pick_place_hardcoded.py show
+   python3 pick_place_hardcoded.py run -n 1
+   ```
+3. **연속 동작 재생**:
+   ```bash
+   python3 motion_seq.py run pick_box
+   ```
+4. **카메라 클릭 픽앤플레이스 (시뮬레이션 RealSense 영상 기반)**:
+   ```bash
+   python3 vision_pick_place.py
+   ```
+   *(카메라 화면에서 블록 클릭 → Space → 터미널 메뉴에서 Enter/a로 하강, g로 집기, p로 놓기)*
+
+---
+
+## 0. 환경 (실물 로봇 구동 시)
 
 로봇 전원 ON → 약 2분 대기 → 연결 점검:
 
@@ -238,8 +287,42 @@ python3 gripper_repeat.py --interval 2 --current 250
 
 ---
 
+## 6. 🍔 `hamburger_final.py` — 비전 기반 수제버거 N단 자율 적재 시스템
+
+YOLOv8 실시간 비전 인식과 정밀 기구학 검증(IK/FK)을 기반으로, 지정된 레시피 순서에 따라 임의의 위치(로봇 베이스 측면 등)에 재료를 N단으로 적재합니다.
+
+- **실제 블록 두께 반영**: 1단당 15mm 누적 계산
+- **적재 릴리즈 여유 높이**: 적재 목표 높이 +10mm 상공에서 그리퍼를 오픈하여 충돌 방지 및 부드러운 안착
+- **그리퍼 동작 완료 대기**: 물리적 완전 열림(1.8초) 및 파지 토크 안착(2.0초) 보장
+- **로봇 베이스 우측 기본 적재**: `X=220.0, Y=-210.0 mm`
+
+```bash
+# [방법 1] 대화형 메뉴 실행 (프리셋 선택 또는 순서 직접 입력)
+python3 hamburger_final.py
+
+# [방법 2] 클래식 5단 버거 원클릭 자율 적재
+python3 hamburger_final.py --recipe "Bottom Bun,Patty,Cheese,Tomato,Bun Top"
+
+# [방법 3] 사용자 지정 적재 위치 및 레시피 지정 실행
+python3 hamburger_final.py --place-x 220.0 --place-y 210.0 --recipe "Bottom Bun,Patty,Cheese,Bun Top"
+```
+
+---
+
+## 7. 🎯 `go_hover_target.py` — 비전 타겟 고정-Z 파지 및 상공 정렬 도구
+
+실시간 카메라 영상에서 물체 Bounding Box와 회전각(Yaw)을 추출하여, J6 관절을 물체 각도에 맞추어 사전 회전시킨 뒤 지정된 파지 높이(`Z=-6.0mm`)로 수직 하강하는 도구입니다.
+
+```bash
+python3 go_hover_target.py
+# 옵션: --z -6.0 --ox -25.5 --width 80.0
+```
+
+---
+
 ## 안전
 
 - 처음 실행은 **물체 없이, 저속으로** 경로부터 확인
 - 비상정지 버튼은 항상 손 닿는 곳에
 - 모든 이동 명령은 실행 전 `Enter` 확인을 받습니다 (`--yes` 로 생략 가능)
+
