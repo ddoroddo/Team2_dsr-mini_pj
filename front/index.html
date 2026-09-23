@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>버거 로봇 주문판</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="header">
+    <h1 class="header__title"><span class="header__logo" aria-hidden="true">🍔</span>버거 로봇 주문판</h1>
+    <div class="header__stats" aria-label="주문 통계">
+      <span class="stat"><span class="stat__label">대기</span><b data-stat="queued">0</b></span>
+      <span class="stat"><span class="stat__label">조리 중</span><b data-stat="in_progress">0</b></span>
+      <span class="stat stat--done"><span class="stat__label">완료</span><b data-stat="completed">0</b></span>
+    </div>
+    <time class="header__clock" data-clock>--:--:--</time>
+  </header>
+
+  <section class="tickets" aria-label="주문서" data-tickets>
+    <div class="tickets__track" data-tickets-track></div>
+    <p class="tickets__empty" data-tickets-empty>주문이 없습니다. 오른쪽에서 버거를 골라 주문을 추가하세요.</p>
+  </section>
+
+  <main class="counter">
+    <div class="now" data-now></div>
+  </main>
+
+  <aside class="composer" aria-label="주문 만들기" data-composer>
+    <div class="composer__panel">
+      <h2 class="composer__title">주문 만들기</h2>
+
+      <section class="presets">
+        <h3 class="section__title">프리셋 레시피</h3>
+        <div class="preset-grid" data-preset-grid></div>
+        <p class="hint">카드를 누르면 아래 조립판에 불러오고, <b>+</b> 를 누르면 바로 주문됩니다.</p>
+      </section>
+
+      <section class="builder">
+        <h3 class="section__title">커스텀 만들기</h3>
+        <div class="builder__preview"><div class="stack" data-builder-stack></div></div>
+        <div class="builder__name" data-builder-name>빈 버거</div>
+        <div class="builder__layers" data-builder-layers></div>
+        <div class="builder__ingredients" data-builder-ingredients></div>
+        <div class="builder__row">
+          <span class="builder__count" data-builder-count>0 / 5</span>
+          <button class="btn btn--ghost-ink" type="button" data-action="pop">되돌리기</button>
+          <button class="btn btn--ghost-ink" type="button" data-action="clear">비우기</button>
+        </div>
+        <button class="btn btn--primary btn--big" type="button" data-action="add">주문 추가</button>
+        <div class="toast" data-toast role="status" aria-live="polite"></div>
+      </section>
+    </div>
+  </aside>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

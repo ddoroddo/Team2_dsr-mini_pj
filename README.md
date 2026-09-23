@@ -13,6 +13,7 @@
 | `detector_node.py` | 카메라 + YOLO 검출 → 물체 3D 좌표를 `/detections` 토픽으로 발행 (임시 COCO 모델, 팀원 모듈로 교체 예정) |
 | `object_picker.py` | `/detections` 를 받아서 **요청한 라벨의 물체**를 집어 place 에 놓기 |
 | `sequences.json`, `poses.json` | 녹화된 자세 (`motion_seq.py` / `pick_place_hardcoded.py` 가 사용) |
+| `front/` | **주문판 웹 UI** (Overcooked 스타일 주문 티켓 · 버거 선택/조립). 실행: `cd front && python3 -m http.server 8000` → <http://localhost:8000>. 로봇 연동 API 는 `front/README.md` 참고 |
 
 ---
 
