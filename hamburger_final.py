@@ -63,8 +63,8 @@ DEFAULT_PLACE_X = 220.0
 DEFAULT_PLACE_Y = -210.0
 DEFAULT_PLACE_YAW = 0.0
 
-# 7. 이동 속도 (mm/s, deg/s)
-VEL = 20
+# 7. 이동 속도 (mm/s, deg/s) - 기존 20의 2배인 40 적용
+VEL = 40.0
 
 # 8. 그리퍼 끝단(TCP) 길이 오프셋 (RH-P12-RN: 116.5mm)
 TCP_Z = 116.5
@@ -99,6 +99,7 @@ parser.add_argument("--z", "--grasp-z", type=float, default=None, help="파지 �
 parser.add_argument("--ox", type=float, default=0.0, help="추가 X 오프셋 (mm, 기본: 0.0)")
 parser.add_argument("--oy", type=float, default=0.0, help="추가 Y 오프셋 (mm, 기본: 0.0)")
 parser.add_argument("--yaw-offset", type=float, default=0.0, help="그리퍼 회전각 보정 오프셋 (deg, 기본: 0.0)")
+parser.add_argument("--vel", type=float, default=40.0, help="로봇 이동 속도 (mm/s, deg/s, 기본: 40.0)")
 parser.add_argument("--block-height", type=float, default=15.0, help="블록 1단 높이 (mm, 기본: 15.0)")
 parser.add_argument("--drop-offset", type=float, default=10.0, help="적재 릴리즈 여유 높이 (mm, 기본: 10.0)")
 parser.add_argument("--place-x", type=float, default=None, help=f"적재 목표 X 좌표 (mm, 기본: {DEFAULT_PLACE_X})")
@@ -112,6 +113,7 @@ if args.z is not None:
 OFFSET_X += args.ox
 OFFSET_Y += args.oy
 YAW_OFFSET += args.yaw_offset
+VEL = float(args.vel)
 BLOCK_HEIGHT_MM = float(args.block_height)
 DROP_OFFSET_Z = float(args.drop_offset)
 
@@ -614,11 +616,12 @@ def execute_stacking_sequence(recipe_items, place_x, place_y, place_yaw=0.0):
 
 
 def main():
-    global FIXED_GRASP_Z, OFFSET_X, OFFSET_Y, YAW_OFFSET, PLACE_X, PLACE_Y, PLACE_YAW, BLOCK_HEIGHT_MM, DROP_OFFSET_Z
+    global FIXED_GRASP_Z, OFFSET_X, OFFSET_Y, YAW_OFFSET, PLACE_X, PLACE_Y, PLACE_YAW, BLOCK_HEIGHT_MM, DROP_OFFSET_Z, VEL
 
     print("\n" + "=" * 70)
     print(" 🍔 Doosan E0509 비전 기반 자율 N단 수제버거 적재 시스템")
     print(f"   ★ 지정 파지 높이 = {FIXED_GRASP_Z:.1f} mm (블록 1단 = {BLOCK_HEIGHT_MM:.0f}mm, 릴리즈 여유 = +{DROP_OFFSET_Z:.0f}mm)")
+    print(f"   ★ 로봇 이동 속도 = {VEL:.0f} mm/s (기존 2배 상향 완료)")
     print(f"   ★ 적용 오프셋   = X: {OFFSET_X:+.1f} mm, Y: {OFFSET_Y:+.1f} mm, Yaw: {YAW_OFFSET:+.1f}°")
     print(f"   ★ 기본 적재 위치 = X: {PLACE_X:.1f} mm, Y: {PLACE_Y:.1f} mm (Yaw: {PLACE_YAW:+.1f}°)")
     print(f"   ★ 그리퍼 파지   = pos {GRIPPER_CLOSE_POS} (~68mm 완충), 전류: {GRIPPER_CLOSE_CURRENT}mA")
@@ -750,7 +753,10 @@ def main():
             continue
         elif sel == "5":
             try:
-                print(f"현재: 파지 Z={FIXED_GRASP_Z:.1f}mm, 블록 높이={BLOCK_HEIGHT_MM:.1f}mm, 릴리즈 여유={DROP_OFFSET_Z:.1f}mm, X오프셋={OFFSET_X:.1f}mm")
+                print(f"현재: 속도 VEL={VEL:.0f}mm/s, 파지 Z={FIXED_GRASP_Z:.1f}mm, 블록 높이={BLOCK_HEIGHT_MM:.1f}mm, 릴리즈 여유={DROP_OFFSET_Z:.1f}mm, X오프셋={OFFSET_X:.1f}mm")
+                val_v = input(f"새 이동 속도 mm/s (Enter: 유지 {VEL:.0f}): ").strip()
+                if val_v:
+                    VEL = float(val_v)
                 val_z = input(f"새 파지 Z (Enter: 유지 {FIXED_GRASP_Z:.1f}): ").strip()
                 if val_z:
                     FIXED_GRASP_Z = float(val_z)
@@ -763,7 +769,7 @@ def main():
                 val_ox = input(f"새 X 오프셋 (Enter: 유지 {OFFSET_X:.1f}): ").strip()
                 if val_ox:
                     OFFSET_X = float(val_ox)
-                print(f"✅ 설정 갱신: 파지 Z={FIXED_GRASP_Z:.1f}mm, 블록 높이={BLOCK_HEIGHT_MM:.1f}mm, 릴리즈 여유={DROP_OFFSET_Z:.1f}mm, X오프셋={OFFSET_X:.1f}mm")
+                print(f"✅ 설정 갱신: 속도={VEL:.0f}mm/s, 파지 Z={FIXED_GRASP_Z:.1f}mm, 블록 높이={BLOCK_HEIGHT_MM:.1f}mm, 릴리즈 여유={DROP_OFFSET_Z:.1f}mm, X오프셋={OFFSET_X:.1f}mm")
             except ValueError:
                 print("❌ 올바른 숫자를 입력하세요.")
             continue
